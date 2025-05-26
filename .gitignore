@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.env
+.venv
+env.bak/
+venv.bak/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Project specific
+data/*.json
+!data/ingredient_aliases_nested.json
+scripts/data/*.json
+upload/
+*.log
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# raw 데이터
+/data/recipe_embedding_input.json
+/data/ingredient_embedding_input.json
+/data/ingredient_aliases_nested.json
+
+OPENSEARCH_HOST=your_host
+OPENSEARCH_USER=your_username
+OPENSEARCH_PASSWORD=your_password
