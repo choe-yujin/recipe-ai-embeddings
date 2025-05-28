@@ -294,6 +294,91 @@ curl -X PUT "https://${OPENSEARCH_HOST}/ingredients" \
    - 오래된 데이터 아카이빙
    - 인스턴스 크기 최적화
 
+## AWS 관리자 가이드
+
+### 1. 프로젝트 설정
+
+1. 프로젝트 클론
+```bash
+git clone [repository_url]
+cd recipe-ai-project
+```
+
+2. Conda 환경 설정
+```bash
+# Conda 설치 (이미 설치되어 있다면 skip)
+# Windows: https://docs.conda.io/en/latest/miniconda.html 에서 다운로드
+
+# 가상환경 생성 및 활성화
+conda create -n recipe-embed python=3.10
+conda activate recipe-embed
+```
+
+3. 필요한 패키지 설치
+```bash
+pip install -r requirements.txt
+```
+
+### 2. AWS 콘솔 설정
+
+1. IAM 사용자 생성 및 권한 설정
+   - AWS 콘솔 로그인
+   - IAM 서비스로 이동
+   - "사용자" → "사용자 생성"
+   - 사용자 이름 입력 (예: recipe-opensearch-admin)
+   - "액세스 키 - 프로그래밍 방식 액세스" 선택
+   - 필요한 권한 정책 연결:
+     - `AmazonOpenSearchServiceFullAccess`
+     - `AmazonOpenSearchServiceReadOnlyAccess`
+   - 사용자 생성 완료 후 액세스 키와 시크릿 키 저장
+
+2. 환경 변수 설정
+```bash
+# .env 파일 생성
+copy .env.example .env
+
+# .env 파일 편집
+# 다음 내용만 설정:
+OPENSEARCH_HOST=vpc-refrige-go-pomktvnaxb7w7sxhi74g26ujsq.ap-northeast-2.es.amazonaws.com
+```
+
+3. AWS 자격 증명을 환경 변수로 설정
+```bash
+# Windows PowerShell에서:
+$env:AWS_ACCESS_KEY_ID="your_access_key"
+$env:AWS_SECRET_ACCESS_KEY="your_secret_key"
+$env:AWS_REGION="ap-northeast-2"
+```
+
+### 3. 데이터 업로드
+
+1. 데이터 파일 확인
+```bash
+# data 디렉토리에 다음 파일들이 있는지 확인:
+# - recipe_embeddings.json
+# - ingredient_embeddings.json
+```
+
+2. 스크립트 실행
+```bash
+cd scripts
+python upload_to_opensearch.py
+```
+
+### 4. 문제 해결
+
+1. AWS 콘솔에서 확인사항:
+   - OpenSearch 도메인이 생성되어 있는지 확인
+   - OpenSearch 도메인의 엔드포인트 주소가 올바른지 확인
+   - VPC 엔드포인트를 사용하는 경우, VPN이나 AWS Direct Connect가 설정되어 있는지 확인
+   - 생성한 IAM 사용자의 권한이 올바르게 설정되어 있는지 확인
+
+2. 문제 발생 시 확인사항:
+   - AWS 자격 증명이 올바른지 확인
+   - OpenSearch 호스트 주소가 올바른지 확인
+   - 네트워크 연결 상태 확인
+   - IAM 권한 확인
+
 ## 라이선스
 
 이 프로젝트는 MIT 라이선스를 따릅니다.
