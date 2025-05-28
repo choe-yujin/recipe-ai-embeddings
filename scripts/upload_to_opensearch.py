@@ -3,17 +3,18 @@ import os
 from opensearchpy import OpenSearch, helpers
 from dotenv import load_dotenv
 import time
+from requests_aws4auth import AWS4Auth
+from opensearchpy.connection import RequestsHttpConnection
 
 # .env 파일에서 환경변수 로드
 load_dotenv()
 
 # OpenSearch 클라이언트 설정
 client = OpenSearch(
-    hosts=[{'host': os.getenv('OPENSEARCH_HOST', 'localhost'), 'port': 9200}],
-    http_auth=(os.getenv('OPENSEARCH_USER', 'admin'), os.getenv('OPENSEARCH_PASSWORD', 'admin')),
+    hosts=[{'host': os.getenv('OPENSEARCH_HOST'), 'port': 443}],
     use_ssl=True,
-    verify_certs=False,
-    ssl_show_warn=False
+    verify_certs=True,
+    connection_class=RequestsHttpConnection
 )
 
 # 인덱스 설정
