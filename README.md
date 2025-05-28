@@ -61,8 +61,6 @@ pip install -r requirements.txt
 
   # OpenSearch 설정
   OPENSEARCH_HOST=your_host
-  OPENSEARCH_USER=your_username
-  OPENSEARCH_PASSWORD=your_password
   ```
 
 ## 사용 방법
@@ -159,23 +157,25 @@ python upload_to_opensearch.py
 
 ### 3. 보안 설정
 
-1. Fine-grained access control:
-   - "Enable fine-grained access control" 활성화
-   - Master user 설정:
-     - Username: `admin` (또는 원하는 이름)
-     - Password: 안전한 비밀번호 설정
+1. IAM 인증 설정:
+   - "Enable IAM authentication" 활성화
+   - IAM 역할 생성 및 필요한 권한 부여
+   - OpenSearch 도메인에 대한 접근 권한 설정
 
-2. IAM 역할 설정:
-   - 필요한 경우 IAM 역할 생성
-   - OpenSearch 도메인에 대한 접근 권한 부여
+2. AWS 자격 증명 설정:
+   - AWS CLI 설정 파일(~/.aws/credentials)에 자격 증명 추가
+   - 또는 환경 변수로 설정:
+   ```
+   AWS_ACCESS_KEY_ID=your_access_key
+   AWS_SECRET_ACCESS_KEY=your_secret_key
+   AWS_REGION=ap-northeast-2
+   ```
 
 ### 4. 환경 변수 설정
 
 `.env` 파일에 다음 설정 추가:
 ```
 OPENSEARCH_HOST=your-custom-endpoint.region.es.amazonaws.com
-OPENSEARCH_USER=admin
-OPENSEARCH_PASSWORD=your-password
 ```
 
 ### 5. 인덱스 생성
@@ -186,7 +186,6 @@ OPENSEARCH_PASSWORD=your-password
 # 레시피 인덱스 생성
 curl -X PUT "https://${OPENSEARCH_HOST}/recipes" \
   -H "Content-Type: application/json" \
-  -u "${OPENSEARCH_USER}:${OPENSEARCH_PASSWORD}" \
   -d '{
     "settings": {
       "index": {
@@ -220,7 +219,6 @@ curl -X PUT "https://${OPENSEARCH_HOST}/recipes" \
 # 재료 인덱스 생성
 curl -X PUT "https://${OPENSEARCH_HOST}/ingredients" \
   -H "Content-Type: application/json" \
-  -u "${OPENSEARCH_USER}:${OPENSEARCH_PASSWORD}" \
   -d '{
     "settings": {
       "index": {
