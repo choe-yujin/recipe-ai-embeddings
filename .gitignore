@@ -39,6 +39,8 @@ venv.bak/
 # Project specific
 data/*.json
 !data/ingredient_aliases_nested.json
+!data/recipe_embeddings.json
+!data/ingredient_embeddings.json
 scripts/data/*.json
 upload/
 *.log
