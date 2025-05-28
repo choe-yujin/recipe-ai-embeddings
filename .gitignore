@@ -51,7 +51,3 @@ upload/
 /data/recipe_embedding_input.json
 /data/ingredient_embedding_input.json
 /data/ingredient_aliases_nested.json
-
-OPENSEARCH_HOST=your_host
-OPENSEARCH_USER=your_username
-OPENSEARCH_PASSWORD=your_password
