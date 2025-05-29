@@ -354,15 +354,15 @@ def preprocess_recipe_data(recipes):
     """
     return recipes
 
-def bulk_upload(index_name, data, batch_size=50):
+def bulk_upload(index_name, data, batch_size=20):
     """
     대량의 데이터를 AWS OpenSearch에 배치 업로드합니다.
-    벡터 데이터는 크기가 크므로 배치 사이즈를 줄입니다.
+    벡터 데이터는 크기가 크므로 배치 사이즈를 더 줄입니다.
     
     Args:
         index_name (str): 업로드할 인덱스명
         data (list): 업로드할 데이터 리스트
-        batch_size (int): 한 번에 처리할 문서 수 (기본값: 50, 벡터용으로 축소)
+        batch_size (int): 한 번에 처리할 문서 수 (기본값: 20, 벡터용으로 더 축소)
     
     Returns:
         bool: 모든 데이터 업로드 성공 시 True
@@ -395,14 +395,14 @@ def bulk_upload(index_name, data, batch_size=50):
         # 배치 크기에 도달하거나 마지막 문서인 경우
         if len(actions) >= batch_size or i == total:
             try:
-                # 대량 업로드 실행 (타임아웃 증가)
+                # 대량 업로드 실행 (타임아웃을 초 단위 숫자로 설정)
                 response = helpers.bulk(
                     client, 
                     actions, 
-                    timeout='600s',      # 10분 타임아웃 (벡터 업로드용)
-                    max_retries=5,       # 최대 5번 재시도
-                    initial_backoff=2,   # 초기 백오프 2초
-                    max_backoff=600      # 최대 백오프 10분
+                    timeout=600,             # 10분 타임아웃 (숫자로 설정)
+                    max_retries=5,           # 최대 5번 재시도
+                    initial_backoff=2,       # 초기 백오프 2초
+                    max_backoff=600          # 최대 백오프 10분
                 )
                 
                 # 성공한 업로드 수 계산
@@ -412,7 +412,7 @@ def bulk_upload(index_name, data, batch_size=50):
                 print(f"   진행상황: {i}/{total} ({(i/total)*100:.1f}%) - 성공: {success_count}")
                 
                 actions = []
-                time.sleep(1)  # API 부하 방지를 위한 대기
+                time.sleep(2)  # API 부하 방지를 위한 대기 시간 증가
                 
             except Exception as e:
                 print(f"❌ 배치 업로드 오류: {e}")
@@ -424,7 +424,7 @@ def bulk_upload(index_name, data, batch_size=50):
                             index=action["_index"], 
                             body=action["_source"], 
                             id=action.get("_id"),
-                            timeout='300s'
+                            timeout=300              # 5분 타임아웃 (숫자로 설정)
                         )
                         success_count += 1
                     except Exception as individual_error:
