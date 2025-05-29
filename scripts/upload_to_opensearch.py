@@ -549,14 +549,15 @@ def main():
     
     # 4. 데이터 파일 경로 설정
     current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(current_dir)  # scripts의 상위 디렉토리 (프로젝트 루트)
     
     print("\n📤 데이터 업로드:")
     
     # 5-1. 레시피 데이터 업로드
     recipe_files = [
-        os.path.join(current_dir, "recipe_embeddings.json"),
-        os.path.join(current_dir, "data", "recipe_embeddings.json"),
-        "./recipe_embeddings.json"
+        os.path.join(project_root, "data", "recipe_embeddings.json"),  # ../data/recipe_embeddings.json
+        os.path.join(current_dir, "recipe_embeddings.json"),           # ./recipe_embeddings.json
+        "../data/recipe_embeddings.json"                               # 상대 경로
     ]
     
     recipe_uploaded = False
@@ -585,9 +586,9 @@ def main():
     
     # 5-2. 재료 데이터 업로드
     ingredient_files = [
-        os.path.join(current_dir, "ingredient_embeddings.json"),
-        os.path.join(current_dir, "data", "ingredient_embeddings.json"),
-        "./ingredient_embeddings.json"
+        os.path.join(project_root, "data", "ingredient_embeddings.json"),  # ../data/ingredient_embeddings.json
+        os.path.join(current_dir, "ingredient_embeddings.json"),           # ./ingredient_embeddings.json
+        "../data/ingredient_embeddings.json"                               # 상대 경로
     ]
     
     ingredient_uploaded = False
