@@ -437,8 +437,6 @@ def test_vector_search():
     """벡터 검색 기능을 자연어로 테스트합니다."""
     print("\n🧪 벡터 검색 테스트:")
     
-    # 실제 OpenAI API를 사용할 수 없으므로, 
-    # 기존 데이터에서 임베딩을 가져와서 유사도 검색 테스트
     try:
         # 1. 기존 데이터에서 샘플 임베딩 가져오기
         print("\n   🔍 재료 벡터 검색 테스트:")
@@ -449,31 +447,50 @@ def test_vector_search():
             body={"query": {"match": {"name": "밀가루"}}, "size": 1}
         )
         
-        if sample_ingredient["hits"]["hits"]:
-            flour_embedding = sample_ingredient["hits"]["hits"][0]["_source"]["embedding"]
-            print(f"   📝 검색 기준: '밀가루' (곡류/분말)")
+        if (sample_ingredient and 
+            sample_ingredient.get("hits") and 
+            sample_ingredient["hits"].get("hits") and 
+            len(sample_ingredient["hits"]["hits"]) > 0):
             
-            # 밀가루와 유사한 재료 검색
-            similar_ingredients = client.search(
-                index=INGREDIENT_INDEX,
-                body={
-                    "size": 5,
-                    "query": {
-                        "knn": {
-                            "embedding": {
-                                "vector": flour_embedding,
-                                "k": 5
+            flour_data = sample_ingredient["hits"]["hits"][0]["_source"]
+            flour_embedding = flour_data.get("embedding")
+            
+            if flour_embedding and len(flour_embedding) == 1536:
+                print(f"   📝 검색 기준: '밀가루' (곡류/분말)")
+                
+                # 밀가루와 유사한 재료 검색
+                similar_ingredients = client.search(
+                    index=INGREDIENT_INDEX,
+                    body={
+                        "size": 5,
+                        "query": {
+                            "knn": {
+                                "embedding": {
+                                    "vector": flour_embedding,
+                                    "k": 5
+                                }
                             }
                         }
                     }
-                }
-            )
-            
-            print(f"   ✅ 유사한 재료 {len(similar_ingredients['hits']['hits'])}개 발견:")
-            for i, hit in enumerate(similar_ingredients['hits']['hits'][:3], 1):
-                source = hit["_source"]
-                score = hit["_score"]
-                print(f"      {i}. {source['name']} ({source['category']}) - 유사도: {score:.3f}")
+                )
+                
+                if (similar_ingredients and 
+                    similar_ingredients.get("hits") and 
+                    similar_ingredients["hits"].get("hits")):
+                    
+                    print(f"   ✅ 유사한 재료 {len(similar_ingredients['hits']['hits'])}개 발견:")
+                    for i, hit in enumerate(similar_ingredients['hits']['hits'][:3], 1):
+                        source = hit.get("_source", {})
+                        score = hit.get("_score", 0)
+                        name = source.get('name', 'Unknown')
+                        category = source.get('category', 'Unknown')
+                        print(f"      {i}. {name} ({category}) - 유사도: {score:.3f}")
+                else:
+                    print("   ❌ 유사한 재료를 찾을 수 없습니다")
+            else:
+                print("   ❌ 밀가루의 임베딩 데이터가 올바르지 않습니다")
+        else:
+            print("   ❌ '밀가루' 재료를 찾을 수 없습니다")
         
         print("\n   🔍 레시피 벡터 검색 테스트:")
         
@@ -483,35 +500,56 @@ def test_vector_search():
             body={"query": {"match": {"name": "볶음"}}, "size": 1}
         )
         
-        if sample_recipe["hits"]["hits"]:
-            stir_fry_embedding = sample_recipe["hits"]["hits"][0]["_source"]["embedding"]
-            recipe_name = sample_recipe["hits"]["hits"][0]["_source"]["name"]
-            print(f"   📝 검색 기준: '{recipe_name}' (볶음 요리)")
+        if (sample_recipe and 
+            sample_recipe.get("hits") and 
+            sample_recipe["hits"].get("hits") and 
+            len(sample_recipe["hits"]["hits"]) > 0):
             
-            # 볶음과 유사한 레시피 검색
-            similar_recipes = client.search(
-                index=RECIPE_INDEX,
-                body={
-                    "size": 5,
-                    "query": {
-                        "knn": {
-                            "embedding": {
-                                "vector": stir_fry_embedding,
-                                "k": 5
+            recipe_data = sample_recipe["hits"]["hits"][0]["_source"]
+            stir_fry_embedding = recipe_data.get("embedding")
+            recipe_name = recipe_data.get("name", "Unknown Recipe")
+            
+            if stir_fry_embedding and len(stir_fry_embedding) == 1536:
+                print(f"   📝 검색 기준: '{recipe_name}' (볶음 요리)")
+                
+                # 볶음과 유사한 레시피 검색
+                similar_recipes = client.search(
+                    index=RECIPE_INDEX,
+                    body={
+                        "size": 5,
+                        "query": {
+                            "knn": {
+                                "embedding": {
+                                    "vector": stir_fry_embedding,
+                                    "k": 5
+                                }
                             }
                         }
                     }
-                }
-            )
-            
-            print(f"   ✅ 유사한 레시피 {len(similar_recipes['hits']['hits'])}개 발견:")
-            for i, hit in enumerate(similar_recipes['hits']['hits'][:3], 1):
-                source = hit["_source"]
-                score = hit["_score"]
-                ingredients_preview = source.get('ingredients', '')[:30] + "..." if len(source.get('ingredients', '')) > 30 else source.get('ingredients', '')
-                print(f"      {i}. {source['name']} - 유사도: {score:.3f}")
-                print(f"         재료: {ingredients_preview}")
-                print(f"         카테고리: {source.get('category', 'N/A')}")
+                )
+                
+                if (similar_recipes and 
+                    similar_recipes.get("hits") and 
+                    similar_recipes["hits"].get("hits")):
+                    
+                    print(f"   ✅ 유사한 레시피 {len(similar_recipes['hits']['hits'])}개 발견:")
+                    for i, hit in enumerate(similar_recipes['hits']['hits'][:3], 1):
+                        source = hit.get("_source", {})
+                        score = hit.get("_score", 0)
+                        name = source.get('name', 'Unknown Recipe')
+                        ingredients = source.get('ingredients', '')
+                        category = source.get('category', 'N/A')
+                        
+                        ingredients_preview = ingredients[:30] + "..." if len(ingredients) > 30 else ingredients
+                        print(f"      {i}. {name} - 유사도: {score:.3f}")
+                        print(f"         재료: {ingredients_preview}")
+                        print(f"         카테고리: {category}")
+                else:
+                    print("   ❌ 유사한 레시피를 찾을 수 없습니다")
+            else:
+                print("   ❌ 레시피의 임베딩 데이터가 올바르지 않습니다")
+        else:
+            print("   ❌ '볶음' 레시피를 찾을 수 없습니다")
         
         # 3. 특정 재료 기반 레시피 추천 테스트
         print("\n   🔍 특정 재료 기반 레시피 추천 테스트:")
@@ -522,72 +560,106 @@ def test_vector_search():
             body={"query": {"match": {"name": "닭고기"}}, "size": 1}
         )
         
-        if chicken_search["hits"]["hits"]:
-            chicken_embedding = chicken_search["hits"]["hits"][0]["_source"]["embedding"]
-            print(f"   📝 검색 재료: '닭고기'")
+        if (chicken_search and 
+            chicken_search.get("hits") and 
+            chicken_search["hits"].get("hits") and 
+            len(chicken_search["hits"]["hits"]) > 0):
             
-            # 닭고기를 사용하는 레시피 검색
-            chicken_recipes = client.search(
-                index=RECIPE_INDEX,
-                body={
-                    "size": 3,
-                    "query": {
-                        "knn": {
-                            "embedding": {
-                                "vector": chicken_embedding,
-                                "k": 10
+            chicken_data = chicken_search["hits"]["hits"][0]["_source"]
+            chicken_embedding = chicken_data.get("embedding")
+            
+            if chicken_embedding and len(chicken_embedding) == 1536:
+                print(f"   📝 검색 재료: '닭고기'")
+                
+                # 닭고기를 사용하는 레시피 검색
+                chicken_recipes = client.search(
+                    index=RECIPE_INDEX,
+                    body={
+                        "size": 3,
+                        "query": {
+                            "knn": {
+                                "embedding": {
+                                    "vector": chicken_embedding,
+                                    "k": 10
+                                }
                             }
                         }
                     }
-                }
-            )
-            
-            print(f"   ✅ 닭고기 활용 레시피 추천:")
-            for i, hit in enumerate(chicken_recipes['hits']['hits'], 1):
-                source = hit["_source"]
-                score = hit["_score"]
-                print(f"      {i}. {source['name']} - 관련도: {score:.3f}")
-                if '닭' in source.get('ingredients', ''):
-                    print(f"         ✓ 닭고기 포함 확인")
+                )
+                
+                if (chicken_recipes and 
+                    chicken_recipes.get("hits") and 
+                    chicken_recipes["hits"].get("hits")):
+                    
+                    print(f"   ✅ 닭고기 활용 레시피 추천:")
+                    for i, hit in enumerate(chicken_recipes['hits']['hits'], 1):
+                        source = hit.get("_source", {})
+                        score = hit.get("_score", 0)
+                        name = source.get('name', 'Unknown Recipe')
+                        ingredients = source.get('ingredients', '')
+                        
+                        print(f"      {i}. {name} - 관련도: {score:.3f}")
+                        if '닭' in ingredients:
+                            print(f"         ✓ 닭고기 포함 확인")
+                        else:
+                            print(f"         - 닭고기 직접 포함되지 않음")
+                else:
+                    print("   ❌ 닭고기 활용 레시피를 찾을 수 없습니다")
+            else:
+                print("   ❌ 닭고기의 임베딩 데이터가 올바르지 않습니다")
+        else:
+            print("   ❌ '닭고기' 재료를 찾을 수 없습니다")
         
-        # 4. 카테고리별 재료 검색 테스트
-        print("\n   🔍 카테고리별 재료 벡터 검색 테스트:")
+        # 4. 간단한 더미 벡터 검색 (기본 기능 확인)
+        print("\n   🔍 기본 벡터 검색 기능 테스트:")
         
-        # 조미료 카테고리 재료 검색
-        seasoning_search = client.search(
+        dummy_vector = [0.1] * 1536
+        
+        dummy_search = client.search(
             index=INGREDIENT_INDEX,
-            body={"query": {"match": {"name": "소금"}}, "size": 1}
+            body={
+                "size": 3,
+                "query": {
+                    "knn": {
+                        "embedding": {
+                            "vector": dummy_vector,
+                            "k": 3
+                        }
+                    }
+                }
+            }
         )
         
-        if seasoning_search["hits"]["hits"]:
-            salt_embedding = seasoning_search["hits"]["hits"][0]["_source"]["embedding"]
-            print(f"   📝 검색 기준: '소금' (조미료)")
-            
-            # 소금과 유사한 조미료 검색
-            similar_seasonings = client.search(
-                index=INGREDIENT_INDEX,
-                body={
-                    "size": 5,
-                    "query": {
-                        "knn": {
-                            "embedding": {
-                                "vector": salt_embedding,
-                                "k": 5
-                            }
-                        }
-                    }
-                }
-            )
-            
-            print(f"   ✅ 유사한 조미료:")
-            for i, hit in enumerate(similar_seasonings['hits']['hits'][:3], 1):
-                source = hit["_source"]
-                score = hit["_score"]
-                print(f"      {i}. {source['name']} ({source['category']}) - 유사도: {score:.3f}")
+        if (dummy_search and 
+            dummy_search.get("hits") and 
+            dummy_search["hits"].get("hits")):
+            print(f"   ✅ 더미 벡터 검색 성공: {len(dummy_search['hits']['hits'])}개 결과")
+        else:
+            print("   ❌ 더미 벡터 검색 실패")
         
     except Exception as e:
         print(f"   ❌ 벡터 검색 테스트 실패: {e}")
         print(f"   오류 세부사항: {str(e)}")
+        
+        # 추가 디버깅 정보
+        try:
+            # 인덱스 존재 확인
+            recipe_exists = client.indices.exists(index=RECIPE_INDEX)
+            ingredient_exists = client.indices.exists(index=INGREDIENT_INDEX)
+            print(f"   🔍 디버깅: recipes 인덱스 존재: {recipe_exists}")
+            print(f"   🔍 디버깅: ingredients 인덱스 존재: {ingredient_exists}")
+            
+            # 문서 수 확인
+            if recipe_exists:
+                recipe_count = client.count(index=RECIPE_INDEX).get("count", 0)
+                print(f"   🔍 디버깅: recipes 문서 수: {recipe_count}")
+            
+            if ingredient_exists:
+                ingredient_count = client.count(index=INGREDIENT_INDEX).get("count", 0)
+                print(f"   🔍 디버깅: ingredients 문서 수: {ingredient_count}")
+                
+        except Exception as debug_error:
+            print(f"   🔍 디버깅 정보 수집 실패: {debug_error}")
 
 def test_natural_language_search():
     """자연어 검색 시뮬레이션 (텍스트 + 벡터 조합)"""
