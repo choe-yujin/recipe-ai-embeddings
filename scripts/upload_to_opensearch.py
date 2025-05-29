@@ -116,7 +116,7 @@ recipe_mapping = {
     },
     "settings": {
         "number_of_shards": 1,      # 단일 샤드 (소규모 데이터용)
-        "number_of_replicas": 0,    # 복제본 없음 (단일 노드용)
+        "number_of_replicas": 2,    
         "analysis": {
             "analyzer": {
                 "nori": {               # 한국어 형태소 분석기
@@ -154,7 +154,7 @@ ingredient_mapping = {
     },
     "settings": {
         "number_of_shards": 1,
-        "number_of_replicas": 0,
+        "number_of_replicas": 2,
         "analysis": {
             "analyzer": {
                 "nori": {
