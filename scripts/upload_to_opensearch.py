@@ -98,7 +98,7 @@ recipe_mapping = {
             "knn.space_type": "cosinesimil"   # 코사인 유사도
         },
         "number_of_shards": 1,
-        "number_of_replicas": 3,            # 복제본 3개로 설정 (운영용, 고가용성)
+        "number_of_replicas": 2,            # 복제본 2개로 설정 (3개 AZ용 최적화)
         "analysis": {
             "analyzer": {
                 "korean_analyzer": {        # nori 대신 사용자 정의 분석기
@@ -162,7 +162,7 @@ ingredient_mapping = {
             "knn.space_type": "cosinesimil"
         },
         "number_of_shards": 1,
-        "number_of_replicas": 3,            # 복제본 3개로 설정 (운영용, 고가용성)
+        "number_of_replicas": 2,            # 복제본 2개로 설정 (3개 AZ용 최적화)
         "analysis": {
             "analyzer": {
                 "korean_analyzer": {
