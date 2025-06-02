@@ -1,9 +1,9 @@
 # ============================================================================
-# AWS OpenSearch 데이터 업로드 스크립트 (완전 수정 버전)
+# Local OpenSearch 데이터 업로드 스크립트 (로컬 환경용)
 # ============================================================================
-# 목적: 1136개 레시피와 약 500개 재료의 벡터 임베딩을 AWS OpenSearch에 업로드
+# 목적: 1136개 레시피와 약 500개 재료의 벡터 임베딩을 로컬 OpenSearch에 업로드
 # 사용법: python upload_to_opensearch.py
-# 필수 환경변수: OPENSEARCH_HOST, OPENSEARCH_USERNAME, OPENSEARCH_PASSWORD
+# 필수 환경변수: OPENSEARCH_HOST, OPENSEARCH_PORT
 # ============================================================================
 
 import json
@@ -20,47 +20,21 @@ load_dotenv()
 # ============================================================================
 
 def create_opensearch_client():
-    """AWS OpenSearch 클라이언트를 생성합니다."""
-    host = os.getenv('OPENSEARCH_HOST')
-    username = os.getenv('OPENSEARCH_USERNAME')
-    password = os.getenv('OPENSEARCH_PASSWORD')
+    """로컬 OpenSearch 클라이언트를 생성합니다."""
+    host = os.getenv('OPENSEARCH_HOST', 'localhost')
+    port = int(os.getenv('OPENSEARCH_PORT', '9201'))
     
-    if username and password:
-        print("🔑 Username/Password 인증 사용")
-        return OpenSearch(
-            hosts=[{'host': host, 'port': 443}],
-            http_auth=(username, password),
-            use_ssl=True,
-            verify_certs=True,
-            ssl_show_warn=False,
-            timeout=60,
-            max_retries=10,
-            retry_on_timeout=True
-        )
-    else:
-        print("🔑 IAM 인증 사용")
-        try:
-            import boto3
-            from requests_aws4auth import AWS4Auth
-            
-            region = os.getenv('AWS_REGION', 'ap-northeast-2')
-            service = 'es'
-            credentials = boto3.Session().get_credentials()
-            awsauth = AWS4Auth(credentials.access_key, credentials.secret_key, region, service, session_token=credentials.token)
-            
-            return OpenSearch(
-                hosts=[{'host': host, 'port': 443}],
-                http_auth=awsauth,
-                use_ssl=True,
-                verify_certs=True,
-                ssl_show_warn=False,
-                timeout=60,
-                max_retries=10,
-                retry_on_timeout=True
-            )
-        except ImportError:
-            print("❌ boto3 또는 requests_aws4auth 패키지가 필요합니다")
-            return None
+    print("🔑 로컬 OpenSearch 접근")
+    print(f"   - 호스트: {host}")
+    print(f"   - 포트: {port}")
+    return OpenSearch(
+        hosts=[{'host': host, 'port': port}],
+        use_ssl=False,
+        verify_certs=False,
+        timeout=60,
+        max_retries=10,
+        retry_on_timeout=True
+    )
 
 # OpenSearch 클라이언트 생성
 client = create_opensearch_client()
@@ -75,16 +49,11 @@ if not client:
 RECIPE_INDEX = 'recipes'
 INGREDIENT_INDEX = 'ingredients'
 
-# 레시피 인덱스 매핑 설정
+# 레시피 인덱스 매핑 설정 (로컬 OpenSearch용)
 recipe_mapping = {
     "settings": {
-        "index": {
-            "knn": True,
-            "knn.algo_param.ef_search": 100,
-            "knn.space_type": "cosinesimil"
-        },
         "number_of_shards": 1,
-        "number_of_replicas": 2,            # 복제본 2개로 설정 (3개 AZ용 최적화)
+        "number_of_replicas": 0,  # 로컬에서는 복제본 불필요
         "analysis": {
             "analyzer": {
                 "korean_analyzer": {
@@ -134,16 +103,11 @@ recipe_mapping = {
     }
 }
 
-# 재료 인덱스 매핑 설정
+# 재료 인덱스 매핑 설정 (로컬 OpenSearch용)
 ingredient_mapping = {
     "settings": {
-        "index": {
-            "knn": True,
-            "knn.algo_param.ef_search": 100,
-            "knn.space_type": "cosinesimil"
-        },
         "number_of_shards": 1,
-        "number_of_replicas": 2,            # 복제본 2개로 설정 (3개 AZ용 최적화)
+        "number_of_replicas": 0,  # 로컬에서는 복제본 불필요
         "analysis": {
             "analyzer": {
                 "korean_analyzer": {
@@ -196,15 +160,15 @@ ingredient_mapping = {
 # ============================================================================
 
 def test_connection():
-    """AWS OpenSearch 서버와의 연결을 테스트합니다."""
+    """로컬 OpenSearch 서버와의 연결을 테스트합니다."""
     try:
         info = client.info()
-        print(f"✅ AWS OpenSearch 연결 성공!")
+        print(f"✅ 로컬 OpenSearch 연결 성공!")
         print(f"   - 버전: {info['version']['number']}")
         print(f"   - 클러스터: {info['cluster_name']}")
         return True
     except Exception as e:
-        print(f"❌ AWS OpenSearch 연결 실패: {e}")
+        print(f"❌ 로컬 OpenSearch 연결 실패: {e}")
         return False
 
 def delete_index_if_exists(index_name):
@@ -218,7 +182,7 @@ def delete_index_if_exists(index_name):
         print(f"⚠️ 인덱스 삭제 중 오류 (무시됨): {e}")
 
 def create_index(index_name, mapping):
-    """AWS OpenSearch에 인덱스를 생성합니다."""
+    """로컬 OpenSearch에 인덱스를 생성합니다."""
     try:
         delete_index_if_exists(index_name)
         response = client.indices.create(index=index_name, body=mapping)
@@ -458,16 +422,17 @@ def test_vector_search():
             if flour_embedding and len(flour_embedding) == 1536:
                 print(f"   📝 검색 기준: '밀가루' (곡류/분말)")
                 
-                # 밀가루와 유사한 재료 검색
+                # 밀가루와 유사한 재료 검색 (로컬 OpenSearch용)
                 similar_ingredients = client.search(
                     index=INGREDIENT_INDEX,
                     body={
                         "size": 5,
                         "query": {
-                            "knn": {
-                                "embedding": {
-                                    "vector": flour_embedding,
-                                    "k": 5
+                            "script_score": {
+                                "query": {"match_all": {}},
+                                "script": {
+                                    "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
+                                    "params": {"query_vector": flour_embedding}
                                 }
                             }
                         }
@@ -512,16 +477,17 @@ def test_vector_search():
             if stir_fry_embedding and len(stir_fry_embedding) == 1536:
                 print(f"   📝 검색 기준: '{recipe_name}' (볶음 요리)")
                 
-                # 볶음과 유사한 레시피 검색
+                # 볶음과 유사한 레시피 검색 (로컬 OpenSearch용)
                 similar_recipes = client.search(
                     index=RECIPE_INDEX,
                     body={
                         "size": 5,
                         "query": {
-                            "knn": {
-                                "embedding": {
-                                    "vector": stir_fry_embedding,
-                                    "k": 5
+                            "script_score": {
+                                "query": {"match_all": {}},
+                                "script": {
+                                    "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
+                                    "params": {"query_vector": stir_fry_embedding}
                                 }
                             }
                         }
@@ -571,16 +537,17 @@ def test_vector_search():
             if chicken_embedding and len(chicken_embedding) == 1536:
                 print(f"   📝 검색 재료: '닭고기'")
                 
-                # 닭고기를 사용하는 레시피 검색
+                # 닭고기를 사용하는 레시피 검색 (로컬 OpenSearch용)
                 chicken_recipes = client.search(
                     index=RECIPE_INDEX,
                     body={
                         "size": 3,
                         "query": {
-                            "knn": {
-                                "embedding": {
-                                    "vector": chicken_embedding,
-                                    "k": 10
+                            "script_score": {
+                                "query": {"match_all": {}},
+                                "script": {
+                                    "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
+                                    "params": {"query_vector": chicken_embedding}
                                 }
                             }
                         }
@@ -620,10 +587,11 @@ def test_vector_search():
             body={
                 "size": 3,
                 "query": {
-                    "knn": {
-                        "embedding": {
-                            "vector": dummy_vector,
-                            "k": 3
+                    "script_score": {
+                        "query": {"match_all": {}},
+                        "script": {
+                            "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
+                            "params": {"query_vector": dummy_vector}
                         }
                     }
                 }
@@ -924,10 +892,10 @@ def main():
     # 8. 상세 상태 확인
     detailed_status_check()
     
-    print("\n🎉 AWS OpenSearch 업로드 완료!")
+    print("\n🎉 로컬 OpenSearch 업로드 완료!")
     print("\n📖 다음 단계:")
-    print("   1. AI 서버에서 kNN 검색 API 구현")
-    print("   2. 네트워크 설정을 VPC로 복원 (보안 강화)")
+    print("   1. AI 서버에서 벡터 검색 API 구현")
+    print("   2. Java 백엔드와 연동")
     print("   3. 레시피 추천 시스템 통합 테스트")
 
 def check_only():
